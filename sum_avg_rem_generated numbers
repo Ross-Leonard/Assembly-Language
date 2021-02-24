@@ -1,0 +1,217 @@
+TITLE Add and average array, Version 2         (Arraywork.asm)
+
+; Ross Leonard
+; 4th Program
+; Summing array, getting average, and count of numbers that are generated
+; with a pattern of 3 8 5
+
+INCLUDE Irvine32.inc
+
+.data
+
+
+NULL	 EQU	0
+CR		 EQU	10
+LF		 EQU	13
+sum		 dword  ?
+sum2	 dword  ?
+avg		 dword  ?
+remain	 dword	?
+cnt		 dword  0
+counter  dword  0
+counter2 dword  0
+counter3 dword	0
+endl byte CR,LF,NULL
+summedupMsg byte "Sum = ",NULL
+average_Msg byte "Average = ",NULL
+remainder_M	byte "Remainder = ",NULL
+
+
+ans dword 64 DUP(?)		;setting up the array
+ary byte 64 DUP(?)		;setting up the 2nd array
+
+.code
+main PROC	
+	
+	
+	sub		eax, eax	;zeroing out eax
+	
+	call gentwo			;generating numbers and putting in array
+	
+	call CrlF			;calling a  linefeed and carriage return
+	
+	call	sumit		;calling the sumit procedure
+	
+	mov		sum2,eax	;storing the value from eax, into sum
+	
+	call average		;calling the average procedure
+
+	sub eax,eax			;zeroing out the register
+	sub ebx,ebx			;zeroing out the register
+
+	mov ebx, counter
+
+	;-----calls to print out sum------
+	call WriteLine
+	lea esi,endl	
+	lea esi,summedupMsg		;printing the label for the sum
+	call WriteLine			;same as above
+	mov		eax,sum2		;moving sum into eax	
+	call ItoA				;calling the procedure that will take it from integer to ascii
+	lea esi, ans			;printing the sum
+	call WriteLine
+	lea esi,endl
+	call WriteLine
+
+	;-------calls to print out average------
+	lea esi, average_Msg	;calling message to dispaly average
+	call WriteLine
+	mov		eax,avg			;moving the average into ebx	
+	call ItoA				;calling ascii proc
+	lea esi,ans
+	call WriteLine
+	lea esi,endl			;calling endl so i can line feed and carriage return
+	call WriteLine
+
+	;-------calls to print out remainder------
+	lea esi, remainder_M	;printing remainder label
+	call WriteLine			
+	mov		eax,remain		;moving remainder into ecx register
+	call ItoA				;calling ascii proc
+	lea esi, ans
+	call WriteLine
+	lea esi, endl
+	call WriteLine
+	call DumpRegs
+
+exit
+
+main ENDP
+
+;-------GENERATE NUMBERS & ADD THEM TO ARRAY-----
+
+gentwo PROC
+			
+			mov esi, offset ans			
+			mov [esi],eax			;putting value thats in eax, into 1st place of array			
+			add esi, 4				;bump array			
+			call WriteInt			;write integer			
+			add counter,1			;add one to counter
+			add counter3,1			
+next:		add eax,3				;add the value 3 to eax
+			cmp eax,400				;is value greater than or equal 400?
+			jg ex					;if it is, jump to ex			
+			mov [esi],eax			;moving eax value to place in array
+			add esi, 4				;bumping array
+			call WriteInt			;write integer		
+			add counter,1			;add one to counter
+			add counter3,1
+			cmp counter3,7			;comparing counter to see if its 7
+			jge moveto
+			add eax,8				;adding 8 to eax
+			cmp eax,400				;is value greater than or equal 400?
+			jg ex					;if it is, jump to ex			
+			mov [esi],eax			;moving that value to array
+			add esi, 4				;bumping array
+			call WriteInt			;write integer	
+			add counter,1			;add one to counter
+			add counter3,1			;same as above
+			cmp counter3,7			;comparing counter to see if its 7
+			jge moveto
+			add eax,5				;adding 5 to value in eax
+			cmp eax,400				;is value greater than or equal 400?
+			jg ex					;if it is, jump to ex
+			;add sum2,eax			;adding value from eax into sum2 place
+			;mov ecx,sum2			;moving sum2 into ecx to hold. 
+			mov [esi],eax			;moving value to array
+			add esi, 4				;bumping array
+			call WriteInt			;writing int	
+			add counter,1			;add one to counter
+			add counter3,1			;same as above
+			cmp counter3,7			;comparing counter to see if its 7
+			jge moveto				;if it is, jump to move to, to call a carriage return and line feed
+			cmp eax,400				;comparing value in eax to see if its 400			
+			jle	next				;if eax value is less than 400, jump back up to next
+
+moveto:		call CrlF				;after 7 values, carriage return and linefeed			
+			sub counter3,7			;setting counter3 back to 0			
+			cmp eax,400				;comparing value in eax to 400
+			jl	next				;if less than, jump to next
+			
+			
+
+ex:						
+			ret
+gentwo ENDP
+
+;-------SUMMING ARRAY---------
+
+sumit PROC			
+			mov esi, offset ans		;address of the array
+			sub eax,eax
+next:		add eax,[esi]			;start of the loop, indirect addressing				
+			add esi,4				;decrement the array					
+			cmp [esi],ebx			;compare if we hit the sentinel value
+			jl next
+
+			ret
+sumit ENDP
+
+;-------AVERAGING ARRAY---------
+
+average PROC
+			mov ebx,eax				;getting the sum from eax, to ebx
+			mov eax,counter			;we have to have a divisor, so we move value in counter to eax
+next:		sub ebx,counter			;taking from the sum value of the counter
+			add cnt,1				;bump our counter so we can get the average
+			cmp ebx,eax				;compare the new sum of ebx to eax
+			jge next				;is new sum greater than divisor, if yes loop to the next
+			add remain,ebx			;if it isnt, then move remainder into ebx
+			mov ebx,cnt				;moving the divident into register ebx
+			mov avg,ebx				;moving ebx to avg
+
+			ret
+average ENDP
+
+;------------Write Line Procedure------------
+WriteLine Proc
+				
+next:			mov al,[esi]		;pulls the first character index
+				cmp al, NULL		;is the character equal to our sentinel value, null?
+				je moveto			;if so, then we jump to moveto and blank out our array
+				call WriteChar		;if not, we use irvines writechar proc to print out character
+				add esi,1			;bump the index of the array
+				jmp next			;loop back to next
+
+moveto:			call BlankoutArray
+				ret
+WriteLine ENDP
+
+BlankoutArray PROC
+				mov ecx,8			;this is the counter for the array size, this is what we'll decrement
+				lea esi,ans			;address of the answer array stored on the esi register
+				mov al,' '			;moving a blank into al register
+next:			mov[esi],al			;moving al into the first position of array, which is a blank
+				add esi,1			;bump the index of the array
+				dec ecx				;decrementing our counter
+				cmp ecx,0			;have we used our 8 bytes ?
+				jne next			;if we havent, loop to next, if yes we return and end procedure
+
+				ret
+BlankoutArray ENDP
+
+ItoA PROC
+				mov ecx,10			;this is for idiv, signed integer division
+next:			cmp eax,0			;we check to see if our number is no longer divisible by 10
+				je moveto			;if it is, we jump to moveto and return
+				mov edx,0			;move a zero into register edx
+				idiv ecx			;idiv always from 'a' register
+				add dl,'0'			;add a character 0 converting the number into ASCII
+				dec esi				;decrement the array
+				mov [esi],dl		;move the remainder from idiv into the index of esi
+				jmp next			;repeat the loop
+
+moveto:			ret
+ItoA ENDP
+
+END main
